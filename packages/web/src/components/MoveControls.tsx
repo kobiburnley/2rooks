@@ -1,4 +1,15 @@
 import React from 'react'
+import type { HintState } from '../types'
+
+interface MoveControlsProps {
+  onBack: () => void
+  onForward: () => void
+  onHint: () => void
+  onReset: () => void
+  hintState: HintState
+  currentMoveIndex: number
+  totalMoves: number
+}
 
 export default function MoveControls({
   onBack,
@@ -8,18 +19,18 @@ export default function MoveControls({
   hintState,
   currentMoveIndex,
   totalMoves,
-}) {
+}: MoveControlsProps) {
   const canGoBack = currentMoveIndex > 0
   const canGoForward = currentMoveIndex < totalMoves
   const isComplete = currentMoveIndex >= totalMoves
 
-  const getHintLabel = () => {
+  const getHintLabel = (): string => {
     if (hintState === 'piece') return 'Hint (where)'
     if (hintState === 'destination') return 'Hide'
     return 'Hint'
   }
 
-  const getHintIcon = () => {
+  const getHintIcon = (): string => {
     if (hintState === 'destination') return '◉'
     return '💡'
   }

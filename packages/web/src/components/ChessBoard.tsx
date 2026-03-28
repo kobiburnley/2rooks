@@ -1,14 +1,22 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Chessboard } from 'react-chessboard'
 
+interface ChessBoardProps {
+  position: string
+  highlightSquares: Record<string, React.CSSProperties>
+  onPieceDrop: (from: string, to: string) => boolean
+  wrongMove: boolean
+  orientation?: 'white' | 'black'
+}
+
 export default function ChessBoard({
   position,
   highlightSquares,
   onPieceDrop,
   wrongMove,
   orientation = 'white',
-}) {
-  const containerRef = useRef(null)
+}: ChessBoardProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const [boardWidth, setBoardWidth] = useState(360)
 
   useEffect(() => {
@@ -24,10 +32,6 @@ export default function ChessBoard({
     return () => observer.disconnect()
   }, [])
 
-  const handlePieceDrop = (sourceSquare, targetSquare) => {
-    return onPieceDrop(sourceSquare, targetSquare)
-  }
-
   return (
     <div
       ref={containerRef}
@@ -35,7 +39,7 @@ export default function ChessBoard({
     >
       <Chessboard
         position={position}
-        onPieceDrop={handlePieceDrop}
+        onPieceDrop={onPieceDrop}
         customSquareStyles={highlightSquares}
         boardWidth={boardWidth}
         boardOrientation={orientation}

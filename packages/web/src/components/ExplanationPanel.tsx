@@ -1,6 +1,13 @@
 import React from 'react'
+import type { Opening } from '../types'
 
-export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves }) {
+interface ExplanationPanelProps {
+  opening: Opening | null
+  currentMoveIndex: number
+  totalMoves: number
+}
+
+export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves }: ExplanationPanelProps) {
   if (!opening) {
     return (
       <div className="explanation-panel">
@@ -14,7 +21,7 @@ export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves
   const isComplete = currentMoveIndex >= totalMoves
   const isStart = currentMoveIndex === 0
 
-  const getMoveLabel = () => {
+  const getMoveLabel = (): string => {
     if (isStart) return 'Opening Overview'
     if (isComplete) return `Complete · ${totalMoves} moves`
     const moveNum = Math.ceil(currentMoveIndex / 2)
@@ -22,26 +29,13 @@ export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves
     return `Move ${moveNum} · ${isWhiteTurn ? 'White' : 'Black'} to play`
   }
 
-  const getExplanation = () => {
-    if (isStart) {
-      return null // show description instead
-    }
-    if (isComplete) {
-      return null
-    }
-    // Show explanation for the NEXT move to be played
-    const move = opening.moves[currentMoveIndex]
-    if (!move) return null
-    return move.explanation || 'No explanation provided.'
-  }
+  const explanation = (!isStart && !isComplete)
+    ? (opening.moves[currentMoveIndex]?.explanation || 'No explanation provided.')
+    : null
 
-  const getNextMoveSan = () => {
-    if (isStart || isComplete) return null
-    return opening.moves[currentMoveIndex]?.san
-  }
-
-  const explanation = getExplanation()
-  const nextSan = getNextMoveSan()
+  const nextSan = (!isStart && !isComplete)
+    ? opening.moves[currentMoveIndex]?.san
+    : null
 
   return (
     <div className="explanation-panel">

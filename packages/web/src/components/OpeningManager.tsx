@@ -1,41 +1,34 @@
 import React, { useState } from 'react'
 import { Chess } from 'chess.js'
+import type { Opening, Move } from '../types'
 
-function parseMoves(text) {
-  // Try to detect format and extract SAN moves
+function parseMoves(text: string): Move[] {
   const trimmed = text.trim()
   if (!trimmed) throw new Error('No moves entered.')
 
-  let tokens = []
-
-  // Check if it looks like PGN (has move numbers like "1." or "1.")
+  let tokens: string[] = []
   const hasMoveNumbers = /\d+\./.test(trimmed)
 
   if (hasMoveNumbers) {
-    // PGN format: "1. e4 e5 2. Nf3 Nc6" or "1.e4 e5 2.Nf3"
-    // Remove move numbers (e.g. "1.", "1...")
     const cleaned = trimmed
-      .replace(/\d+\.\.\./g, '') // remove "1..." black move numbers
-      .replace(/\d+\./g, '')      // remove "1." white move numbers
-      .replace(/\{[^}]*\}/g, '')  // remove PGN comments
-      .replace(/\([^)]*\)/g, '')  // remove PGN variations
-      .replace(/\$\d+/g, '')      // remove NAG annotations
-      .replace(/[*10½\-]+$/g, '') // remove result
+      .replace(/\d+\.\.\./g, '')
+      .replace(/\d+\./g, '')
+      .replace(/\{[^}]*\}/g, '')
+      .replace(/\([^)]*\)/g, '')
+      .replace(/\$\d+/g, '')
+      .replace(/[*10½\-]+$/g, '')
       .trim()
     tokens = cleaned.split(/\s+/).filter(Boolean)
   } else if (trimmed.includes('\n')) {
-    // One move per line
     tokens = trimmed.split('\n').map(s => s.trim()).filter(Boolean)
   } else {
-    // Space separated
     tokens = trimmed.split(/\s+/).filter(Boolean)
   }
 
   if (tokens.length === 0) throw new Error('Could not find any moves.')
 
-  // Validate each move with chess.js
   const chess = new Chess()
-  const validatedMoves = []
+  const validatedMoves: Move[] = []
 
   for (const token of tokens) {
     if (!token || token === '*' || /^(1-0|0-1|1\/2-1\/2)$/.test(token)) continue
@@ -49,36 +42,39 @@ function parseMoves(text) {
     }
   }
 
-  if (validatedMoves.length === 0) {
-    throw new Error('No valid moves found.')
-  }
-
+  if (validatedMoves.length === 0) throw new Error('No valid moves found.')
   return validatedMoves
 }
 
-function generateId(name) {
+function generateId(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
 }
 
-export default function OpeningManager({ openings, onClose, onSelect, onSave }) {
+interface OpeningManagerProps {
+  openings: Opening[]
+  onClose: () => void
+  onSelect: (opening: Opening) => void
+  onSave: (openings: Opening[]) => void
+}
+
+export default function OpeningManager({ openings, onClose, onSelect, onSave }: OpeningManagerProps) {
   const [movesText, setMovesText] = useState('')
   const [nameText, setNameText] = useState('')
   const [descText, setDescText] = useState('')
-  const [parseError, setParseError] = useState(null)
-  const [parseSuccess, setParseSuccess] = useState(null)
-  const [parsedMoves, setParsedMoves] = useState(null)
+  const [parseError, setParseError] = useState<string | null>(null)
+  const [parseSuccess, setParseSuccess] = useState<string | null>(null)
+  const [parsedMoves, setParsedMoves] = useState<Move[] | null>(null)
 
   const handleParse = () => {
     setParseError(null)
     setParseSuccess(null)
     setParsedMoves(null)
-
     try {
       const moves = parseMoves(movesText)
       setParsedMoves(moves)
       setParseSuccess(`Parsed ${moves.length} moves successfully. Enter a name and save.`)
     } catch (err) {
-      setParseError(err.message)
+      setParseError(err instanceof Error ? err.message : 'Unknown error')
     }
   }
 
@@ -88,14 +84,13 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }) 
       return
     }
     const name = nameText.trim() || 'Custom Opening'
-    const newOpening = {
+    const newOpening: Opening = {
       id: generateId(name),
       name,
       description: descText.trim() || 'A custom opening.',
       moves: parsedMoves,
     }
-    const updated = [...openings, newOpening]
-    onSave(updated)
+    onSave([...openings, newOpening])
     setMovesText('')
     setNameText('')
     setDescText('')
@@ -106,12 +101,11 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }) 
     onClose()
   }
 
-  const handleDelete = (id) => {
-    const updated = openings.filter(o => o.id !== id)
-    onSave(updated)
+  const handleDelete = (id: string) => {
+    onSave(openings.filter(o => o.id !== id))
   }
 
-  const handleSelect = (opening) => {
+  const handleSelect = (opening: Opening) => {
     onSelect(opening)
     onClose()
   }
@@ -124,7 +118,6 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }) 
           <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
         </div>
 
-        {/* Openings List */}
         <div className="modal-section">
           <h3>Your Openings</h3>
           <div className="opening-list">
@@ -155,7 +148,6 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }) 
           </div>
         </div>
 
-        {/* Add Opening */}
         <div className="modal-section">
           <h3>Add Custom Opening</h3>
 

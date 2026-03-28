@@ -1,12 +1,18 @@
 import React, { useState, useCallback } from 'react'
-import ChessBoard from './components/ChessBoard.jsx'
-import MoveControls from './components/MoveControls.jsx'
-import ExplanationPanel from './components/ExplanationPanel.jsx'
-import OpeningManager from './components/OpeningManager.jsx'
-import { useOpening } from './hooks/useOpening.js'
-import { loadOpenings, saveOpenings } from './data/openings.js'
+import ChessBoard from './components/ChessBoard'
+import MoveControls from './components/MoveControls'
+import ExplanationPanel from './components/ExplanationPanel'
+import OpeningManager from './components/OpeningManager'
+import { useOpening } from './hooks/useOpening'
+import { loadOpenings, saveOpenings } from './data/openings'
+import type { Opening } from './types'
 
-function ProgressBar({ current, total }) {
+interface ProgressBarProps {
+  current: number
+  total: number
+}
+
+function ProgressBar({ current, total }: ProgressBarProps) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0
   return (
     <div className="progress-bar-area">
@@ -18,23 +24,22 @@ function ProgressBar({ current, total }) {
   )
 }
 
-function Toast({ message }) {
+interface ToastProps {
+  message: string | null
+}
+
+function Toast({ message }: ToastProps) {
   if (!message) return null
   return (
     <div className="toast-container">
-      <div className="toast">
-        {message}
-      </div>
+      <div className="toast">{message}</div>
     </div>
   )
 }
 
 export default function App() {
-  const [openings, setOpenings] = useState(() => loadOpenings())
-  const [selectedOpening, setSelectedOpening] = useState(() => {
-    const all = loadOpenings()
-    return all[0] ?? null
-  })
+  const [openings, setOpenings] = useState<Opening[]>(() => loadOpenings())
+  const [selectedOpening, setSelectedOpening] = useState<Opening | null>(() => loadOpenings()[0] ?? null)
   const [showManager, setShowManager] = useState(false)
 
   const {
@@ -53,28 +58,25 @@ export default function App() {
     handlePlayerMove,
   } = useOpening(selectedOpening)
 
-  const handleOpeningChange = useCallback((e) => {
-    const id = e.target.value
-    const found = openings.find(o => o.id === id)
+  const handleOpeningChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const found = openings.find(o => o.id === e.target.value)
     if (found) setSelectedOpening(found)
   }, [openings])
 
-  const handleSaveOpenings = useCallback((updated) => {
+  const handleSaveOpenings = useCallback((updated: Opening[]) => {
     saveOpenings(updated)
     setOpenings(updated)
-    // If current opening was deleted, switch to first available
     if (!updated.find(o => o.id === selectedOpening?.id)) {
       setSelectedOpening(updated[0] ?? null)
     }
   }, [selectedOpening])
 
-  const handleSelectOpening = useCallback((opening) => {
+  const handleSelectOpening = useCallback((opening: Opening) => {
     setSelectedOpening(opening)
   }, [])
 
   return (
     <div className="app">
-      {/* Header */}
       <header className="app-header">
         <h1>2<span>Rooks</span></h1>
         <button
@@ -86,7 +88,6 @@ export default function App() {
         </button>
       </header>
 
-      {/* Opening Selector */}
       <div className="opening-selector">
         <label htmlFor="opening-select">Current Opening</label>
         <select
@@ -103,10 +104,8 @@ export default function App() {
         </select>
       </div>
 
-      {/* Progress */}
       <ProgressBar current={currentMoveIndex} total={totalMoves} />
 
-      {/* Board */}
       <div className="board-area">
         <ChessBoard
           position={fen}
@@ -117,14 +116,12 @@ export default function App() {
         />
       </div>
 
-      {/* Explanation */}
       <ExplanationPanel
         opening={selectedOpening}
         currentMoveIndex={currentMoveIndex}
         totalMoves={totalMoves}
       />
 
-      {/* Controls */}
       <MoveControls
         onBack={goBack}
         onForward={goForward}
@@ -135,10 +132,8 @@ export default function App() {
         totalMoves={totalMoves}
       />
 
-      {/* Toast */}
       <Toast key={toastKey} message={toast} />
 
-      {/* Opening Manager Modal */}
       {showManager && (
         <OpeningManager
           openings={openings}

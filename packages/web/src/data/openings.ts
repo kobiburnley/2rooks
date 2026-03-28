@@ -1,4 +1,6 @@
-export const DEFAULT_OPENINGS = [
+import type { Opening } from '../types'
+
+export const DEFAULT_OPENINGS: Opening[] = [
   {
     id: 'ruy-lopez',
     name: 'Ruy Lopez (Spanish Game)',
@@ -207,13 +209,13 @@ export const DEFAULT_OPENINGS = [
 
 const STORAGE_KEY = '2rooks-openings'
 
-export function loadOpenings() {
+export function loadOpenings(): Opening[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
-      const parsed = JSON.parse(stored)
+      const parsed: unknown = JSON.parse(stored)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
+        return parsed as Opening[]
       }
     }
   } catch {
@@ -222,7 +224,7 @@ export function loadOpenings() {
   return DEFAULT_OPENINGS
 }
 
-export function saveOpenings(openings) {
+export function saveOpenings(openings: Opening[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(openings))
   } catch {

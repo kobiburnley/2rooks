@@ -1,20 +1,40 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Chess } from 'chess.js'
+import type { Opening, HintState } from '../types'
 
-export function useOpening(opening) {
+interface HighlightSquares {
+  [square: string]: React.CSSProperties
+}
+
+interface UseOpeningReturn {
+  currentMoveIndex: number
+  totalMoves: number
+  fen: string
+  hintState: HintState
+  wrongMove: boolean
+  toast: string | null
+  toastKey: number
+  highlightSquares: HighlightSquares
+  goForward: () => void
+  goBack: () => void
+  showHint: () => void
+  reset: () => void
+  handlePlayerMove: (from: string, to: string) => boolean
+}
+
+export function useOpening(opening: Opening | null): UseOpeningReturn {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0)
   const [chess, setChess] = useState(() => new Chess())
-  const [hintState, setHintState] = useState(null) // null | 'piece' | 'destination'
+  const [hintState, setHintState] = useState<HintState>(null)
   const [wrongMove, setWrongMove] = useState(false)
-  const [toast, setToast] = useState(null)
+  const [toast, setToast] = useState<string | null>(null)
   const [toastKey, setToastKey] = useState(0)
-  const toastTimerRef = useRef(null)
-  const wrongMoveTimerRef = useRef(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrongMoveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Reset when opening changes
   useEffect(() => {
-    const newChess = new Chess()
-    setChess(newChess)
+    setChess(new Chess())
     setCurrentMoveIndex(0)
     setHintState(null)
     setWrongMove(false)
@@ -23,14 +43,8 @@ export function useOpening(opening) {
 
   const totalMoves = opening?.moves?.length ?? 0
 
-  // Build FEN by replaying moves up to currentMoveIndex
-  const getFen = useCallback(() => {
-    return chess.fen()
-  }, [chess])
-
-  // Compute highlight squares based on hint state and last move
-  const highlightSquares = useCallback(() => {
-    const squares = {}
+  const highlightSquares = useCallback((): HighlightSquares => {
+    const squares: HighlightSquares = {}
 
     // Last move highlight (light blue)
     if (currentMoveIndex > 0 && opening?.moves) {
@@ -52,7 +66,6 @@ export function useOpening(opening) {
     // Hint highlights
     if (hintState && opening?.moves && currentMoveIndex < totalMoves) {
       const nextMove = opening.moves[currentMoveIndex]
-      // Parse the move to get from/to squares
       const tempChess = new Chess()
       for (let i = 0; i < currentMoveIndex; i++) {
         try { tempChess.move(opening.moves[i].san) } catch { break }
@@ -76,7 +89,7 @@ export function useOpening(opening) {
     return squares
   }, [currentMoveIndex, hintState, opening, totalMoves])
 
-  const showToast = useCallback((message) => {
+  const showToast = useCallback((message: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setToast(message)
     setToastKey(k => k + 1)
@@ -118,27 +131,22 @@ export function useOpening(opening) {
   }, [currentMoveIndex, totalMoves])
 
   const reset = useCallback(() => {
-    const newChess = new Chess()
-    setChess(newChess)
+    setChess(new Chess())
     setCurrentMoveIndex(0)
     setHintState(null)
     setWrongMove(false)
     setToast(null)
   }, [])
 
-  const handlePlayerMove = useCallback((from, to) => {
+  const handlePlayerMove = useCallback((from: string, to: string): boolean => {
     if (!opening?.moves || currentMoveIndex >= totalMoves) return false
 
     const expectedMove = opening.moves[currentMoveIndex]
-
-    // Get verbose move info for the expected move
     const tempChess = new Chess(chess.fen())
     const legalMoves = tempChess.moves({ verbose: true })
     const match = legalMoves.find(m => m.san === expectedMove.san)
 
-    // Check if the player's move matches expected
     if (match && match.from === from && match.to === to) {
-      // Correct move
       try {
         const newChess = new Chess(chess.fen())
         newChess.move(expectedMove.san)
@@ -150,15 +158,12 @@ export function useOpening(opening) {
         return false
       }
     } else {
-      // Wrong move — check if it's even a legal move at all
       const isLegalMove = legalMoves.some(m => m.from === from && m.to === to)
       if (!isLegalMove) return false
 
-      // It's legal but wrong for this opening
       if (wrongMoveTimerRef.current) clearTimeout(wrongMoveTimerRef.current)
       setWrongMove(true)
       showToast('Wrong move! Try again')
-
       wrongMoveTimerRef.current = setTimeout(() => {
         setWrongMove(false)
       }, 600)
@@ -167,7 +172,6 @@ export function useOpening(opening) {
     }
   }, [chess, currentMoveIndex, opening, totalMoves, showToast])
 
-  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
@@ -178,8 +182,7 @@ export function useOpening(opening) {
   return {
     currentMoveIndex,
     totalMoves,
-    chess,
-    fen: getFen(),
+    fen: chess.fen(),
     hintState,
     wrongMove,
     toast,
