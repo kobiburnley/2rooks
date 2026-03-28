@@ -21,21 +21,16 @@ export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves
   const isComplete = currentMoveIndex >= totalMoves
   const isStart = currentMoveIndex === 0
 
+  const lastMove = !isStart ? opening.moves[currentMoveIndex - 1] : null
+
   const getMoveLabel = (): string => {
     if (isStart) return 'Opening Overview'
-    if (isComplete) return `Complete · ${totalMoves} moves`
-    const moveNum = Math.ceil(currentMoveIndex / 2)
-    const isWhiteTurn = currentMoveIndex % 2 === 0
-    return `Move ${moveNum} · ${isWhiteTurn ? 'White' : 'Black'} to play`
+    const lastIndex = currentMoveIndex - 1
+    const moveNum = Math.floor(lastIndex / 2) + 1
+    const color = lastIndex % 2 === 0 ? 'White' : 'Black'
+    if (isComplete) return `Complete · ${color} played move ${moveNum}`
+    return `Move ${moveNum} · ${color}`
   }
-
-  const explanation = (!isStart && !isComplete)
-    ? (opening.moves[currentMoveIndex]?.explanation || 'No explanation provided.')
-    : null
-
-  const nextSan = (!isStart && !isComplete)
-    ? opening.moves[currentMoveIndex]?.san
-    : null
 
   return (
     <div className="explanation-panel">
@@ -48,32 +43,27 @@ export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves
         </>
       )}
 
-      {isComplete && (
-        <>
-          <div className="opening-title">{opening.name}</div>
-          <div className="complete-badge">Opening complete! ✓</div>
-        </>
-      )}
+      {isComplete && <div className="complete-badge">Opening complete! ✓</div>}
 
-      {!isStart && !isComplete && explanation && (
+      {!isStart && lastMove && (
         <>
-          {nextSan && (
-            <div style={{ marginBottom: '6px' }}>
-              <span style={{
-                background: '#0f3460',
-                color: '#e94560',
-                borderRadius: '4px',
-                padding: '2px 8px',
-                fontSize: '0.82rem',
-                fontWeight: '700',
-                fontFamily: 'monospace',
-                letterSpacing: '0.5px',
-              }}>
-                {nextSan}
-              </span>
-            </div>
-          )}
-          <div className="explanation-text">{explanation}</div>
+          <div style={{ marginBottom: '6px' }}>
+            <span style={{
+              background: '#0f3460',
+              color: '#e94560',
+              borderRadius: '4px',
+              padding: '2px 8px',
+              fontSize: '0.82rem',
+              fontWeight: '700',
+              fontFamily: 'monospace',
+              letterSpacing: '0.5px',
+            }}>
+              {lastMove.san}
+            </span>
+          </div>
+          <div className="explanation-text">
+            {lastMove.explanation || 'No explanation provided.'}
+          </div>
         </>
       )}
     </div>
