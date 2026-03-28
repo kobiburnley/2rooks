@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import { Chess } from 'chess.js'
-import { useStore } from '../stores/OpeningStore'
+import type { OpeningStore } from '../stores/OpeningStore'
 import type { Move } from '../types'
 
 function parseMoves(text: string): Move[] {
@@ -50,14 +50,13 @@ function generateId(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
 }
 
-const OpeningManager = observer(() => {
-  const store = useStore()
-  const [movesText, setMovesText]     = useState('')
-  const [nameText, setNameText]       = useState('')
-  const [descText, setDescText]       = useState('')
-  const [parseError, setParseError]   = useState<string | null>(null)
+const OpeningManager = observer(({ store }: { store: OpeningStore }) => {
+  const [movesText, setMovesText]       = useState('')
+  const [nameText, setNameText]         = useState('')
+  const [descText, setDescText]         = useState('')
+  const [parseError, setParseError]     = useState<string | null>(null)
   const [parseSuccess, setParseSuccess] = useState<string | null>(null)
-  const [parsedMoves, setParsedMoves] = useState<Move[] | null>(null)
+  const [parsedMoves, setParsedMoves]   = useState<Move[] | null>(null)
 
   const handleParse = () => {
     setParseError(null)

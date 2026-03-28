@@ -1,9 +1,8 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { useStore } from '../stores/OpeningStore'
+import type { OpeningStore } from '../stores/OpeningStore'
 
-const ExplanationPanel = observer(() => {
-  const store = useStore()
+const ExplanationPanel = observer(({ store }: { store: OpeningStore }) => {
   const { selectedOpening, currentMoveIndex, totalMoves, lastMove } = store
 
   if (!selectedOpening) {

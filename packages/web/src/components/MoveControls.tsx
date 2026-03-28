@@ -1,9 +1,8 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { useStore } from '../stores/OpeningStore'
+import type { OpeningStore } from '../stores/OpeningStore'
 
-const MoveControls = observer(() => {
-  const store = useStore()
+const MoveControls = observer(({ store }: { store: OpeningStore }) => {
   const { currentMoveIndex, totalMoves, hintState } = store
 
   const canGoBack    = currentMoveIndex > 0

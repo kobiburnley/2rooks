@@ -1,5 +1,4 @@
 import { makeObservable, observable, computed, action } from 'mobx'
-import { createContext, useContext } from 'react'
 import { Chess } from 'chess.js'
 import type { Opening, HintState } from '../types'
 import { loadOpenings, saveOpenings } from '../data/openings'
@@ -181,10 +180,3 @@ export class OpeningStore {
   }
 }
 
-export const StoreContext = createContext<OpeningStore | null>(null)
-
-export function useStore(): OpeningStore {
-  const store = useContext(StoreContext)
-  if (!store) throw new Error('useStore must be used inside StoreContext.Provider')
-  return store
-}
