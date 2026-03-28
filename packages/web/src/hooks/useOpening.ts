@@ -22,9 +22,16 @@ interface UseOpeningReturn {
   handlePlayerMove: (from: string, to: string) => boolean
 }
 
+function replayMoves(moves: Opening['moves'], upTo: number): Chess {
+  const chess = new Chess()
+  for (let i = 0; i < upTo; i++) {
+    try { chess.move(moves[i].san) } catch { break }
+  }
+  return chess
+}
+
 export function useOpening(opening: Opening | null): UseOpeningReturn {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0)
-  const [chess, setChess] = useState(() => new Chess())
   const [hintState, setHintState] = useState<HintState>(null)
   const [wrongMove, setWrongMove] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -34,7 +41,6 @@ export function useOpening(opening: Opening | null): UseOpeningReturn {
 
   // Reset when opening changes
   useEffect(() => {
-    setChess(new Chess())
     setCurrentMoveIndex(0)
     setHintState(null)
     setWrongMove(false)
@@ -42,6 +48,9 @@ export function useOpening(opening: Opening | null): UseOpeningReturn {
   }, [opening?.id])
 
   const totalMoves = opening?.moves?.length ?? 0
+
+  // Derive current position by replaying moves — no stale state
+  const chess = opening ? replayMoves(opening.moves, currentMoveIndex) : new Chess()
 
   const highlightSquares = useCallback((): HighlightSquares => {
     const squares: HighlightSquares = {}
@@ -99,27 +108,16 @@ export function useOpening(opening: Opening | null): UseOpeningReturn {
   }, [])
 
   const goForward = useCallback(() => {
-    if (!opening?.moves || currentMoveIndex >= totalMoves) return
-    const move = opening.moves[currentMoveIndex]
-    try {
-      const newChess = new Chess(chess.fen())
-      newChess.move(move.san)
-      setChess(newChess)
-      setCurrentMoveIndex(idx => idx + 1)
-      setHintState(null)
-    } catch {
-      // invalid move in data — skip silently
-    }
-  }, [chess, currentMoveIndex, opening, totalMoves])
+    if (currentMoveIndex >= totalMoves) return
+    setCurrentMoveIndex(idx => idx + 1)
+    setHintState(null)
+  }, [currentMoveIndex, totalMoves])
 
   const goBack = useCallback(() => {
     if (currentMoveIndex <= 0) return
-    const newChess = new Chess(chess.fen())
-    newChess.undo()
-    setChess(newChess)
     setCurrentMoveIndex(idx => idx - 1)
     setHintState(null)
-  }, [chess, currentMoveIndex])
+  }, [currentMoveIndex])
 
   const showHint = useCallback(() => {
     if (currentMoveIndex >= totalMoves) return
@@ -131,7 +129,6 @@ export function useOpening(opening: Opening | null): UseOpeningReturn {
   }, [currentMoveIndex, totalMoves])
 
   const reset = useCallback(() => {
-    setChess(new Chess())
     setCurrentMoveIndex(0)
     setHintState(null)
     setWrongMove(false)
@@ -147,16 +144,9 @@ export function useOpening(opening: Opening | null): UseOpeningReturn {
     const match = legalMoves.find(m => m.san === expectedMove.san)
 
     if (match && match.from === from && match.to === to) {
-      try {
-        const newChess = new Chess(chess.fen())
-        newChess.move(expectedMove.san)
-        setChess(newChess)
-        setCurrentMoveIndex(idx => idx + 1)
-        setHintState(null)
-        return true
-      } catch {
-        return false
-      }
+      setCurrentMoveIndex(idx => idx + 1)
+      setHintState(null)
+      return true
     } else {
       const isLegalMove = legalMoves.some(m => m.from === from && m.to === to)
       if (!isLegalMove) return false

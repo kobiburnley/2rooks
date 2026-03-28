@@ -205,6 +205,84 @@ export const DEFAULT_OPENINGS: Opening[] = [
       },
     ],
   },
+  {
+    id: 'traxler-counter-attack',
+    name: 'Traxler Counter Attack',
+    description:
+      'A wild and aggressive gambit by Black against the Fried Liver setup. Instead of the safe 4...d5, Black sacrifices a piece with 4...Bc5!?, daring White to take the f7 pawn and entering a chaotic, heavily tactical battle where Black bets on the exposed White king.',
+    moves: [
+      {
+        san: 'e4',
+        explanation:
+          'White opens with the king\'s pawn, claiming central space and opening lines for the queen and bishop. This is the starting point for the Two Knights Defense that the Traxler aims to exploit.',
+      },
+      {
+        san: 'e5',
+        explanation:
+          'Black mirrors White, immediately contesting the center. This symmetrical response sets up the open game that leads into the Two Knights Defense.',
+      },
+      {
+        san: 'Nf3',
+        explanation:
+          'White develops the knight with tempo, attacking the e5 pawn. The knight heads toward the center and prepares the bishop to come to c4, eyeing f7.',
+      },
+      {
+        san: 'Nc6',
+        explanation:
+          'Black defends the e5 pawn and develops the knight to its best square. This is the Two Knights Defense — Black invites sharp tactical play.',
+      },
+      {
+        san: 'Bc4',
+        explanation:
+          'White deploys the bishop to the aggressive c4 square, pointing directly at the vulnerable f7 pawn — the weakest point in Black\'s position. This sets up potential Ng5 threats.',
+      },
+      {
+        san: 'Nf6',
+        explanation:
+          'Black develops the king\'s knight and counterattacks e4. This is the Two Knights Defense proper. Black accepts the risk of the Ng5 attack rather than playing the safer 3...Bc5.',
+      },
+      {
+        san: 'Ng5',
+        explanation:
+          'White attacks f7 with both the knight and bishop. This aggressive leap threatens Nxf7, forking the queen and rook. Black must respond carefully — or recklessly.',
+      },
+      {
+        san: 'Bc5',
+        explanation:
+          'The Traxler Counter Attack! Instead of the normal 4...d5, Black develops the bishop and ignores the threat to f7. This is a piece sacrifice — Black is daring White to take on f7 and opening a vicious counterattack on the exposed White king.',
+      },
+      {
+        san: 'Nxf7',
+        explanation:
+          'White accepts the challenge and grabs the f7 pawn, forking the queen and rook. This is the critical test of the Traxler — but the White king is about to be dragged into the open.',
+      },
+      {
+        san: 'Bxf2+',
+        explanation:
+          'The point of the Traxler! Black sacrifices the bishop, forcing the White king off the back rank. White must capture — the attack is already blazing.',
+      },
+      {
+        san: 'Kxf2',
+        explanation:
+          'White is forced to take the bishop with the king, stepping into the open. The White king on f2 is dangerously exposed and will be hunted for the rest of the game.',
+      },
+      {
+        san: 'Nxe4+',
+        explanation:
+          'Black wins back a piece with check, simultaneously attacking the king and the bishop on c4. The king is forced to move again, losing time and further exposing itself to Black\'s pieces.',
+      },
+      {
+        san: 'Kg1',
+        explanation:
+          'White retreats the king to relative safety. Kg3 or Ke3 lead to even more dangerous positions for White. From g1 White hopes to weather the storm, but Black\'s attack is far from over.',
+      },
+      {
+        san: 'Qh4',
+        explanation:
+          'Black brings the queen into the attack with tempo, threatening Qf2# and Qxc4. The queen joins the assault and White faces multiple threats simultaneously with no easy defense.',
+      },
+    ],
+  },
 ]
 
 const STORAGE_KEY = '2rooks-openings'
@@ -215,7 +293,10 @@ export function loadOpenings(): Opening[] {
     if (stored) {
       const parsed: unknown = JSON.parse(stored)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed as Opening[]
+        const storedOpenings = parsed as Opening[]
+        const storedIds = new Set(storedOpenings.map(o => o.id))
+        const newDefaults = DEFAULT_OPENINGS.filter(o => !storedIds.has(o.id))
+        return [...storedOpenings, ...newDefaults]
       }
     }
   } catch {
