@@ -2,7 +2,6 @@ import React from 'react'
 import { observer } from 'mobx-react-lite'
 import type { Opening } from '../types'
 import type { OpeningStore } from '../stores/OpeningStore'
-import { ManagerPortal } from './ManagerPortal'
 
 // ── Breadcrumbs ──────────────────────────────────────────────────────────────
 
@@ -109,7 +108,7 @@ const BrowserHeader = observer(({ store }: { store: OpeningStore }) => {
       <span className="browser-title">{store.browseTitle}</span>
       <button
         className="manage-btn"
-        onClick={() => { store.showManager = true }}
+        onClick={() => store.openManage()}
         aria-label="Add opening"
       >
         + Add
@@ -135,7 +134,6 @@ export const OpeningBrowser = observer(({ store }: { store: OpeningStore }) => (
         ))
       )}
     </div>
-    <ManagerPortal store={store} />
   </div>
 ))
 

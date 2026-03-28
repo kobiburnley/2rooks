@@ -7,7 +7,8 @@ import { BoardArea } from './components/BoardArea'
 import { ExplanationPanel } from './components/ExplanationPanel'
 import { MoveControls } from './components/MoveControls'
 import { Toast } from './components/Toast'
-import { ManagerPortal } from './components/ManagerPortal'
+import { ManageScreen } from './components/ManageScreen'
+import { AddOpeningScreen } from './components/AddOpeningScreen'
 
 const StudyHeader = observer(({ store }: { store: OpeningStore }) => (
   <header className="study-header">
@@ -32,15 +33,15 @@ const StudyView = ({ store }: { store: OpeningStore }) => (
     <ExplanationPanel store={store} />
     <MoveControls store={store} />
     <Toast store={store} />
-    <ManagerPortal store={store} />
   </div>
 )
 
-const ViewRouter = observer(({ store }: { store: OpeningStore }) =>
-  store.view === 'browse'
-    ? <OpeningBrowser store={store} />
-    : <StudyView store={store} />
-)
+const ViewRouter = observer(({ store }: { store: OpeningStore }) => {
+  if (store.view === 'browse')  return <OpeningBrowser store={store} />
+  if (store.view === 'manage')  return <ManageScreen store={store} />
+  if (store.view === 'add')     return <AddOpeningScreen store={store} />
+  return <StudyView store={store} />
+})
 
 export function App() {
   const [store] = useState(() => new OpeningStore())

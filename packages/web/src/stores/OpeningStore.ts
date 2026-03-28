@@ -6,13 +6,12 @@ import { loadOpenings, saveOpenings } from '../data/openings'
 
 export class OpeningStore {
   // ── Navigation ─────────────────────────────────────────────────────────────
-  view: 'browse' | 'study' = 'browse'
+  view: 'browse' | 'study' | 'manage' | 'add' = 'browse'
   browserId: string | null = null   // which opening's children are shown; null = root
 
   // ── Openings list ──────────────────────────────────────────────────────────
   openings: Opening[] = []
   isLoading = true
-  showManager = false
 
   // ── Study state ────────────────────────────────────────────────────────────
   selectedOpening: Opening | null = null
@@ -31,7 +30,6 @@ export class OpeningStore {
       browserId:        observable.ref,
       openings:         observable.ref,
       isLoading:        observable.ref,
-      showManager:      observable.ref,
       selectedOpening:  observable.ref,
       currentMoveIndex: observable.ref,
       hintState:        observable.ref,
@@ -52,6 +50,8 @@ export class OpeningStore {
       navigate:         action,
       startStudying:    action,
       openBrowser:      action,
+      openManage:       action,
+      openAdd:          action,
       selectOpening:    action,
       saveOpenings:     action,
       goForward:        action,
@@ -120,6 +120,14 @@ export class OpeningStore {
     // Return to the level of the currently selected opening so context is preserved
     this.browserId = this.selectedOpening?.parentId ?? null
     this.view = 'browse'
+  }
+
+  openManage() {
+    this.view = 'manage'
+  }
+
+  openAdd() {
+    this.view = 'add'
   }
 
   // ── Study computed ──────────────────────────────────────────────────────────
