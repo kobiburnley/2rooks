@@ -2,6 +2,7 @@ import React from 'react'
 import { observer } from 'mobx-react-lite'
 import type { Opening } from '../types'
 import type { OpeningStore } from '../stores/OpeningStore'
+import ManagerPortal from './ManagerPortal'
 
 // ── Breadcrumbs ──────────────────────────────────────────────────────────────
 
@@ -124,7 +125,9 @@ const OpeningBrowser = observer(({ store }: { store: OpeningStore }) => (
     <BrowserHeader store={store} />
     <Breadcrumbs store={store} />
     <div className="browser-list">
-      {store.browsedOpenings.length === 0 ? (
+      {store.isLoading ? (
+        <div className="browser-empty">Loading openings…</div>
+      ) : store.browsedOpenings.length === 0 ? (
         <div className="browser-empty">No openings here yet. Tap + Add to create one.</div>
       ) : (
         store.browsedOpenings.map(opening => (

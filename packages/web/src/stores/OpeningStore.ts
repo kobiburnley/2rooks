@@ -1,4 +1,4 @@
-import { makeObservable, observable, computed, action } from 'mobx'
+import { makeObservable, observable, computed, action, runInAction } from 'mobx'
 import { Chess } from 'chess.js'
 import type { CSSProperties } from 'react'
 import type { Opening, HintState } from '../types'
@@ -10,7 +10,8 @@ export class OpeningStore {
   browserId: string | null = null   // which opening's children are shown; null = root
 
   // ── Openings list ──────────────────────────────────────────────────────────
-  openings: Opening[] = loadOpenings()
+  openings: Opening[] = []
+  isLoading = true
   showManager = false
 
   // ── Study state ────────────────────────────────────────────────────────────
@@ -29,6 +30,7 @@ export class OpeningStore {
       view:             observable.ref,
       browserId:        observable.ref,
       openings:         observable.ref,
+      isLoading:        observable.ref,
       showManager:      observable.ref,
       selectedOpening:  observable.ref,
       currentMoveIndex: observable.ref,
@@ -57,6 +59,16 @@ export class OpeningStore {
       cycleHint:        action,
       reset:            action,
       handlePlayerMove: action,
+      load:             action,
+    })
+    void this.load()
+  }
+
+  async load() {
+    const openings = await loadOpenings()
+    runInAction(() => {
+      this.openings = openings
+      this.isLoading = false
     })
   }
 
