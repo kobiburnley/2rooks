@@ -1,0 +1,19 @@
+name: Regenerate lockfile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: rm yarn.lock && yarn install
+      - run: |
+          git config user.email "ci@github.com"
+          git config user.name "CI"
+          git add yarn.lock
+          git commit -m "Regenerate lockfile with public registry" && git push || echo "No changes"
