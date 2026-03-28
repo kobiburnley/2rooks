@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import { observer } from 'mobx-react-lite'
 import { Chess } from 'chess.js'
-import type { Opening, Move } from '../types'
+import { useStore } from '../stores/OpeningStore'
+import type { Move } from '../types'
 
 function parseMoves(text: string): Move[] {
   const trimmed = text.trim()
@@ -28,40 +30,32 @@ function parseMoves(text: string): Move[] {
   if (tokens.length === 0) throw new Error('Could not find any moves.')
 
   const chess = new Chess()
-  const validatedMoves: Move[] = []
+  const moves: Move[] = []
 
   for (const token of tokens) {
     if (!token || token === '*' || /^(1-0|0-1|1\/2-1\/2)$/.test(token)) continue
     try {
       const result = chess.move(token)
-      if (result) {
-        validatedMoves.push({ san: result.san, explanation: '' })
-      }
+      if (result) moves.push({ san: result.san, explanation: '' })
     } catch {
       throw new Error(`Invalid move: "${token}". Please check your input.`)
     }
   }
 
-  if (validatedMoves.length === 0) throw new Error('No valid moves found.')
-  return validatedMoves
+  if (moves.length === 0) throw new Error('No valid moves found.')
+  return moves
 }
 
 function generateId(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
 }
 
-interface OpeningManagerProps {
-  openings: Opening[]
-  onClose: () => void
-  onSelect: (opening: Opening) => void
-  onSave: (openings: Opening[]) => void
-}
-
-export default function OpeningManager({ openings, onClose, onSelect, onSave }: OpeningManagerProps) {
-  const [movesText, setMovesText] = useState('')
-  const [nameText, setNameText] = useState('')
-  const [descText, setDescText] = useState('')
-  const [parseError, setParseError] = useState<string | null>(null)
+const OpeningManager = observer(() => {
+  const store = useStore()
+  const [movesText, setMovesText]     = useState('')
+  const [nameText, setNameText]       = useState('')
+  const [descText, setDescText]       = useState('')
+  const [parseError, setParseError]   = useState<string | null>(null)
   const [parseSuccess, setParseSuccess] = useState<string | null>(null)
   const [parsedMoves, setParsedMoves] = useState<Move[] | null>(null)
 
@@ -79,52 +73,36 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }: 
   }
 
   const handleSave = () => {
-    if (!parsedMoves) {
-      setParseError('Parse moves first before saving.')
-      return
-    }
+    if (!parsedMoves) { setParseError('Parse moves first before saving.'); return }
     const name = nameText.trim() || 'Custom Opening'
-    const newOpening: Opening = {
+    const newOpening = {
       id: generateId(name),
       name,
       description: descText.trim() || 'A custom opening.',
       moves: parsedMoves,
     }
-    onSave([...openings, newOpening])
-    setMovesText('')
-    setNameText('')
-    setDescText('')
-    setParsedMoves(null)
-    setParseSuccess(null)
-    setParseError(null)
-    onSelect(newOpening)
-    onClose()
+    store.saveOpenings([...store.openings, newOpening])
+    store.selectOpening(newOpening)
+    store.showManager = false
   }
 
-  const handleDelete = (id: string) => {
-    onSave(openings.filter(o => o.id !== id))
-  }
-
-  const handleSelect = (opening: Opening) => {
-    onSelect(opening)
-    onClose()
-  }
+  const close = () => { store.showManager = false }
 
   return (
-    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) close() }}>
       <div className="modal-panel" role="dialog" aria-modal="true" aria-label="Manage Openings">
         <div className="modal-header">
           <h2>Manage Openings</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+          <button className="modal-close" onClick={close} aria-label="Close">×</button>
         </div>
 
         <div className="modal-section">
           <h3>Your Openings</h3>
           <div className="opening-list">
-            {openings.length === 0 && (
+            {store.openings.length === 0 && (
               <div style={{ color: '#888', fontSize: '0.85rem' }}>No openings saved yet.</div>
             )}
-            {openings.map((opening) => (
+            {store.openings.map(opening => (
               <div className="opening-list-item" key={opening.id}>
                 <div className="item-info">
                   <div className="item-name">{opening.name}</div>
@@ -132,13 +110,13 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }: 
                 </div>
                 <button
                   className="item-action-btn select-opening-btn"
-                  onClick={() => handleSelect(opening)}
+                  onClick={() => { store.selectOpening(opening); close() }}
                 >
                   Study
                 </button>
                 <button
                   className="item-action-btn delete-opening-btn"
-                  onClick={() => handleDelete(opening.id)}
+                  onClick={() => store.saveOpenings(store.openings.filter(o => o.id !== opening.id))}
                   aria-label={`Delete ${opening.name}`}
                 >
                   ✕
@@ -156,12 +134,7 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }: 
             <textarea
               id="moves-input"
               value={movesText}
-              onChange={(e) => {
-                setMovesText(e.target.value)
-                setParseError(null)
-                setParseSuccess(null)
-                setParsedMoves(null)
-              }}
+              onChange={e => { setMovesText(e.target.value); setParseError(null); setParseSuccess(null); setParsedMoves(null) }}
               placeholder={'1. e4 e5 2. Nf3 Nc6 3. Bb5\n\nor one move per line:\ne4\ne5\nNf3'}
               rows={5}
             />
@@ -174,7 +147,7 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }: 
             Parse Moves
           </button>
 
-          {parseError && <div className="parse-error">{parseError}</div>}
+          {parseError   && <div className="parse-error">{parseError}</div>}
           {parseSuccess && <div className="parse-success">{parseSuccess}</div>}
 
           {parsedMoves && (
@@ -185,29 +158,27 @@ export default function OpeningManager({ openings, onClose, onSelect, onSave }: 
                   id="name-input"
                   type="text"
                   value={nameText}
-                  onChange={(e) => setNameText(e.target.value)}
+                  onChange={e => setNameText(e.target.value)}
                   placeholder="e.g. King's Indian Defense"
                 />
               </div>
-
               <div className="form-group">
                 <label htmlFor="desc-input">Description (optional)</label>
                 <input
                   id="desc-input"
                   type="text"
                   value={descText}
-                  onChange={(e) => setDescText(e.target.value)}
+                  onChange={e => setDescText(e.target.value)}
                   placeholder="Brief description of this opening..."
                 />
               </div>
-
-              <button className="parse-btn" onClick={handleSave}>
-                Save Opening
-              </button>
+              <button className="parse-btn" onClick={handleSave}>Save Opening</button>
             </>
           )}
         </div>
       </div>
     </div>
   )
-}
+})
+
+export default OpeningManager

@@ -1,14 +1,12 @@
 import React from 'react'
-import type { Opening } from '../types'
+import { observer } from 'mobx-react-lite'
+import { useStore } from '../stores/OpeningStore'
 
-interface ExplanationPanelProps {
-  opening: Opening | null
-  currentMoveIndex: number
-  totalMoves: number
-}
+const ExplanationPanel = observer(() => {
+  const store = useStore()
+  const { selectedOpening, currentMoveIndex, totalMoves, lastMove } = store
 
-export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves }: ExplanationPanelProps) {
-  if (!opening) {
+  if (!selectedOpening) {
     return (
       <div className="explanation-panel">
         <div className="explanation-text" style={{ color: '#888' }}>
@@ -18,12 +16,10 @@ export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves
     )
   }
 
+  const isStart    = currentMoveIndex === 0
   const isComplete = currentMoveIndex >= totalMoves
-  const isStart = currentMoveIndex === 0
 
-  const lastMove = !isStart ? opening.moves[currentMoveIndex - 1] : null
-
-  const getMoveLabel = (): string => {
+  const getMoveLabel = () => {
     if (isStart) return 'Opening Overview'
     const lastIndex = currentMoveIndex - 1
     const moveNum = Math.floor(lastIndex / 2) + 1
@@ -38,8 +34,8 @@ export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves
 
       {isStart && (
         <>
-          <div className="opening-title">{opening.name}</div>
-          <div className="explanation-text">{opening.description}</div>
+          <div className="opening-title">{selectedOpening.name}</div>
+          <div className="explanation-text">{selectedOpening.description}</div>
         </>
       )}
 
@@ -68,4 +64,6 @@ export default function ExplanationPanel({ opening, currentMoveIndex, totalMoves
       )}
     </div>
   )
-}
+})
+
+export default ExplanationPanel

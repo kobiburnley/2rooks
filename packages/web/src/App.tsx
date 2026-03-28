@@ -1,87 +1,26 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState } from 'react'
+import { observer } from 'mobx-react-lite'
+import { OpeningStore, StoreContext } from './stores/OpeningStore'
 import ChessBoard from './components/ChessBoard'
 import MoveControls from './components/MoveControls'
 import ExplanationPanel from './components/ExplanationPanel'
 import OpeningManager from './components/OpeningManager'
-import { useOpening } from './hooks/useOpening'
-import { loadOpenings, saveOpenings } from './data/openings'
-import type { Opening } from './types'
 
-interface ProgressBarProps {
-  current: number
-  total: number
-}
+const App = observer(() => {
+  const [store] = useState(() => new OpeningStore())
 
-function ProgressBar({ current, total }: ProgressBarProps) {
-  const pct = total > 0 ? Math.round((current / total) * 100) : 0
-  return (
-    <div className="progress-bar-area">
-      <div className="progress-bar-track">
-        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
-      </div>
-      <div className="progress-label">{current}/{total}</div>
-    </div>
-  )
-}
-
-interface ToastProps {
-  message: string | null
-}
-
-function Toast({ message }: ToastProps) {
-  if (!message) return null
-  return (
-    <div className="toast-container">
-      <div className="toast">{message}</div>
-    </div>
-  )
-}
-
-export default function App() {
-  const [openings, setOpenings] = useState<Opening[]>(() => loadOpenings())
-  const [selectedOpening, setSelectedOpening] = useState<Opening | null>(() => loadOpenings()[0] ?? null)
-  const [showManager, setShowManager] = useState(false)
-
-  const {
-    currentMoveIndex,
-    totalMoves,
-    fen,
-    hintState,
-    wrongMove,
-    toast,
-    toastKey,
-    highlightSquares,
-    goForward,
-    goBack,
-    showHint,
-    reset,
-    handlePlayerMove,
-  } = useOpening(selectedOpening)
-
-  const handleOpeningChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const found = openings.find(o => o.id === e.target.value)
-    if (found) setSelectedOpening(found)
-  }, [openings])
-
-  const handleSaveOpenings = useCallback((updated: Opening[]) => {
-    saveOpenings(updated)
-    setOpenings(updated)
-    if (!updated.find(o => o.id === selectedOpening?.id)) {
-      setSelectedOpening(updated[0] ?? null)
-    }
-  }, [selectedOpening])
-
-  const handleSelectOpening = useCallback((opening: Opening) => {
-    setSelectedOpening(opening)
-  }, [])
+  const pct = store.totalMoves > 0
+    ? Math.round((store.currentMoveIndex / store.totalMoves) * 100)
+    : 0
 
   return (
+    <StoreContext.Provider value={store}>
     <div className="app">
       <header className="app-header">
         <h1>2<span>Rooks</span></h1>
         <button
           className="manage-btn"
-          onClick={() => setShowManager(true)}
+          onClick={() => { store.showManager = true }}
           aria-label="Manage openings"
         >
           Openings
@@ -92,56 +31,46 @@ export default function App() {
         <label htmlFor="opening-select">Current Opening</label>
         <select
           id="opening-select"
-          value={selectedOpening?.id ?? ''}
-          onChange={handleOpeningChange}
+          value={store.selectedOpening?.id ?? ''}
+          onChange={e => {
+            const found = store.openings.find(o => o.id === e.target.value)
+            if (found) store.selectOpening(found)
+          }}
         >
-          {openings.length === 0 && (
-            <option value="">No openings — add one</option>
-          )}
-          {openings.map(o => (
-            <option key={o.id} value={o.id}>{o.name}</option>
-          ))}
+          {store.openings.length === 0 && <option value="">No openings — add one</option>}
+          {store.openings.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </div>
 
-      <ProgressBar current={currentMoveIndex} total={totalMoves} />
+      <div className="progress-bar-area">
+        <div className="progress-bar-track">
+          <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="progress-label">{store.currentMoveIndex}/{store.totalMoves}</div>
+      </div>
 
       <div className="board-area">
         <ChessBoard
-          position={fen}
-          highlightSquares={highlightSquares}
-          onPieceDrop={handlePlayerMove}
-          wrongMove={wrongMove}
-          orientation="white"
+          position={store.fen}
+          highlightSquares={store.highlightSquares}
+          onPieceDrop={(from, to) => store.handlePlayerMove(from, to)}
+          wrongMove={store.wrongMove}
         />
       </div>
 
-      <ExplanationPanel
-        opening={selectedOpening}
-        currentMoveIndex={currentMoveIndex}
-        totalMoves={totalMoves}
-      />
+      <ExplanationPanel />
+      <MoveControls />
 
-      <MoveControls
-        onBack={goBack}
-        onForward={goForward}
-        onHint={showHint}
-        onReset={reset}
-        hintState={hintState}
-        currentMoveIndex={currentMoveIndex}
-        totalMoves={totalMoves}
-      />
-
-      <Toast key={toastKey} message={toast} />
-
-      {showManager && (
-        <OpeningManager
-          openings={openings}
-          onClose={() => setShowManager(false)}
-          onSelect={handleSelectOpening}
-          onSave={handleSaveOpenings}
-        />
+      {store.toast && (
+        <div className="toast-container" key={store.toastKey}>
+          <div className="toast">{store.toast}</div>
+        </div>
       )}
+
+      {store.showManager && <OpeningManager />}
     </div>
+    </StoreContext.Provider>
   )
-}
+})
+
+export default App
