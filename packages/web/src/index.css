@@ -32,7 +32,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 0 0 24px 0;
+  padding: 0 0 72px 0;
 }
 
 /* ===== Header ===== */
@@ -185,10 +185,19 @@ body {
 
 /* ===== Move Controls ===== */
 .move-controls {
-  margin: 0 16px;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 8px;
+  padding: 10px 16px 12px;
+  background: #16213e;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 50;
 }
 
 .ctrl-btn {
