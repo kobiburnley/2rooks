@@ -1,9 +1,9 @@
 
 import { observer } from 'mobx-react-lite'
 import type { OpeningStore } from '../stores/OpeningStore'
-import ChessBoard from './ChessBoard'
+import { ChessBoard } from './ChessBoard'
 
-const BoardArea = observer(({ store }: { store: OpeningStore }) => (
+export const BoardArea = observer(({ store }: { store: OpeningStore }) => (
   <div className="board-area">
     <ChessBoard
       position={store.fen}
@@ -14,4 +14,3 @@ const BoardArea = observer(({ store }: { store: OpeningStore }) => (
   </div>
 ))
 
-export default BoardArea

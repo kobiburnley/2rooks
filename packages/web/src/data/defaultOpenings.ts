@@ -1,6 +1,6 @@
 import type { Opening } from '../types'
 
-const DEFAULT_OPENINGS: Opening[] = [
+export const DEFAULT_OPENINGS: Opening[] = [
 
   // ── Ruy Lopez ──────────────────────────────────────────────────────────────
   {
@@ -150,4 +150,3 @@ const DEFAULT_OPENINGS: Opening[] = [
   },
 ]
 
-export default DEFAULT_OPENINGS

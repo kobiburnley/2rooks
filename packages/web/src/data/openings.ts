@@ -5,7 +5,7 @@ const STORAGE_VERSION = 2
 const STORAGE_KEY = '2rooks-openings'
 
 export async function loadOpenings(): Promise<Opening[]> {
-  const { default: DEFAULT_OPENINGS } = await import('./defaultOpenings')
+  const { DEFAULT_OPENINGS } = await import('./defaultOpenings')
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {

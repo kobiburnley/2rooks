@@ -2,7 +2,7 @@
 import { observer } from 'mobx-react-lite'
 import type { OpeningStore } from '../stores/OpeningStore'
 
-const ProgressBar = observer(({ store }: { store: OpeningStore }) => {
+export const ProgressBar = observer(({ store }: { store: OpeningStore }) => {
   const pct = store.totalMoves > 0
     ? Math.round((store.currentMoveIndex / store.totalMoves) * 100)
     : 0
@@ -16,4 +16,3 @@ const ProgressBar = observer(({ store }: { store: OpeningStore }) => {
   )
 })
 
-export default ProgressBar

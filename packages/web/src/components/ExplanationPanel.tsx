@@ -2,7 +2,7 @@
 import { observer } from 'mobx-react-lite'
 import type { OpeningStore } from '../stores/OpeningStore'
 
-const ExplanationPanel = observer(({ store }: { store: OpeningStore }) => {
+export const ExplanationPanel = observer(({ store }: { store: OpeningStore }) => {
   const { selectedOpening, currentMoveIndex, totalMoves, lastMove } = store
 
   if (!selectedOpening) {
@@ -65,4 +65,3 @@ const ExplanationPanel = observer(({ store }: { store: OpeningStore }) => {
   )
 })
 
-export default ExplanationPanel

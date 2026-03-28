@@ -50,7 +50,7 @@ function generateId(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
 }
 
-const OpeningManager = observer(({ store }: { store: OpeningStore }) => {
+export const OpeningManager = observer(({ store }: { store: OpeningStore }) => {
   const [movesText, setMovesText]       = useState('')
   const [nameText, setNameText]         = useState('')
   const [descText, setDescText]         = useState('')
@@ -180,4 +180,3 @@ const OpeningManager = observer(({ store }: { store: OpeningStore }) => {
   )
 })
 
-export default OpeningManager

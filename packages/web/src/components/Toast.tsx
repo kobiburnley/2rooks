@@ -2,7 +2,7 @@
 import { observer } from 'mobx-react-lite'
 import type { OpeningStore } from '../stores/OpeningStore'
 
-const Toast = observer(({ store }: { store: OpeningStore }) => {
+export const Toast = observer(({ store }: { store: OpeningStore }) => {
   if (!store.toast) return null
   return (
     <div className="toast-container" key={store.toastKey}>
@@ -11,4 +11,3 @@ const Toast = observer(({ store }: { store: OpeningStore }) => {
   )
 })
 
-export default Toast

@@ -2,7 +2,7 @@
 import { observer } from 'mobx-react-lite'
 import type { OpeningStore } from '../stores/OpeningStore'
 
-const MoveControls = observer(({ store }: { store: OpeningStore }) => {
+export const MoveControls = observer(({ store }: { store: OpeningStore }) => {
   const { currentMoveIndex, totalMoves, hintState } = store
 
   const canGoBack    = currentMoveIndex > 0
@@ -56,4 +56,3 @@ const MoveControls = observer(({ store }: { store: OpeningStore }) => {
   )
 })
 
-export default MoveControls

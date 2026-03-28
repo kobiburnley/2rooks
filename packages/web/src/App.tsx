@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import { OpeningStore } from './stores/OpeningStore'
-import OpeningBrowser from './components/OpeningBrowser'
-import ProgressBar from './components/ProgressBar'
-import BoardArea from './components/BoardArea'
-import ExplanationPanel from './components/ExplanationPanel'
-import MoveControls from './components/MoveControls'
-import Toast from './components/Toast'
-import ManagerPortal from './components/ManagerPortal'
+import { OpeningBrowser } from './components/OpeningBrowser'
+import { ProgressBar } from './components/ProgressBar'
+import { BoardArea } from './components/BoardArea'
+import { ExplanationPanel } from './components/ExplanationPanel'
+import { MoveControls } from './components/MoveControls'
+import { Toast } from './components/Toast'
+import { ManagerPortal } from './components/ManagerPortal'
 
 const StudyHeader = observer(({ store }: { store: OpeningStore }) => (
   <header className="study-header">
@@ -42,7 +42,7 @@ const ViewRouter = observer(({ store }: { store: OpeningStore }) =>
     : <StudyView store={store} />
 )
 
-export default function App() {
+export function App() {
   const [store] = useState(() => new OpeningStore())
   return <ViewRouter store={store} />
 }

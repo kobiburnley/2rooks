@@ -9,7 +9,7 @@ interface ChessBoardProps {
   orientation?: 'white' | 'black'
 }
 
-export default function ChessBoard({
+export function ChessBoard({
   position,
   highlightSquares,
   onPieceDrop,
