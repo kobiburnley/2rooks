@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import { Chess } from 'chess.js'
 import type { OpeningStore } from '../stores/OpeningStore'

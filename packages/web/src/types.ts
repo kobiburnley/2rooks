@@ -8,6 +8,7 @@ export interface Opening {
   name: string
   description: string
   moves: Move[]
+  parentId?: string
 }
 
 export type HintState = 'piece' | 'destination' | null

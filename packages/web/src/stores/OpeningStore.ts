@@ -1,37 +1,55 @@
 import { makeObservable, observable, computed, action } from 'mobx'
 import { Chess } from 'chess.js'
+import type { CSSProperties } from 'react'
 import type { Opening, HintState } from '../types'
 import { loadOpenings, saveOpenings } from '../data/openings'
 
 export class OpeningStore {
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  view: 'browse' | 'study' = 'browse'
+  browserId: string | null = null   // which opening's children are shown; null = root
+
+  // ── Openings list ──────────────────────────────────────────────────────────
   openings: Opening[] = loadOpenings()
-  selectedOpening: Opening | null = loadOpenings()[0] ?? null
   showManager = false
 
+  // ── Study state ────────────────────────────────────────────────────────────
+  selectedOpening: Opening | null = null
   currentMoveIndex = 0
   hintState: HintState = null
   wrongMove = false
   toast: string | null = null
   toastKey = 0
 
-  // Not observable — just mutable refs for timer handles
   _toastTimer: ReturnType<typeof setTimeout> | null = null
   _wrongMoveTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor() {
     makeObservable(this, {
+      view:             observable.ref,
+      browserId:        observable.ref,
       openings:         observable.ref,
-      selectedOpening:  observable.ref,
       showManager:      observable.ref,
+      selectedOpening:  observable.ref,
       currentMoveIndex: observable.ref,
       hintState:        observable.ref,
       wrongMove:        observable.ref,
       toast:            observable.ref,
       toastKey:         observable.ref,
+      // browse computed
+      browsedOpenings:  computed,
+      browseTitle:      computed,
+      breadcrumbs:      computed,
+      childIds:         computed,
+      // study computed
       totalMoves:       computed,
       fen:              computed,
       highlightSquares: computed,
       lastMove:         computed,
+      // actions
+      navigate:         action,
+      startStudying:    action,
+      openBrowser:      action,
       selectOpening:    action,
       saveOpenings:     action,
       goForward:        action,
@@ -41,6 +59,58 @@ export class OpeningStore {
       handlePlayerMove: action,
     })
   }
+
+  // ── Browse computed ─────────────────────────────────────────────────────────
+
+  get browsedOpenings(): Opening[] {
+    return this.openings.filter(o => (o.parentId ?? null) === this.browserId)
+  }
+
+  get browseTitle(): string {
+    if (!this.browserId) return 'All Openings'
+    return this.openings.find(o => o.id === this.browserId)?.name ?? 'All Openings'
+  }
+
+  /** Path from root to current browserId, for breadcrumb rendering */
+  get breadcrumbs(): Opening[] {
+    const crumbs: Opening[] = []
+    let id: string | null = this.browserId
+    while (id) {
+      const opening = this.openings.find(o => o.id === id)
+      if (!opening) break
+      crumbs.unshift(opening)
+      id = opening.parentId ?? null
+    }
+    return crumbs
+  }
+
+  /** Set of opening IDs that have at least one child */
+  get childIds(): Set<string> {
+    const ids = new Set<string>()
+    for (const o of this.openings) {
+      if (o.parentId) ids.add(o.parentId)
+    }
+    return ids
+  }
+
+  // ── Browse actions ──────────────────────────────────────────────────────────
+
+  navigate(id: string | null) {
+    this.browserId = id
+  }
+
+  startStudying(opening: Opening) {
+    this.selectOpening(opening)
+    this.view = 'study'
+  }
+
+  openBrowser() {
+    // Return to the level of the currently selected opening so context is preserved
+    this.browserId = this.selectedOpening?.parentId ?? null
+    this.view = 'browse'
+  }
+
+  // ── Study computed ──────────────────────────────────────────────────────────
 
   get totalMoves() {
     return this.selectedOpening?.moves.length ?? 0
@@ -56,12 +126,11 @@ export class OpeningStore {
     return chess.fen()
   }
 
-  get highlightSquares(): Record<string, React.CSSProperties> {
-    const squares: Record<string, React.CSSProperties> = {}
+  get highlightSquares(): Record<string, CSSProperties> {
+    const squares: Record<string, CSSProperties> = {}
     const moves = this.selectedOpening?.moves
     if (!moves) return squares
 
-    // Last move (light blue)
     if (this.currentMoveIndex > 0) {
       const chess = new Chess()
       for (let i = 0; i < this.currentMoveIndex - 1; i++) {
@@ -76,7 +145,6 @@ export class OpeningStore {
       } catch { /* ignore */ }
     }
 
-    // Hint (yellow piece, green destination)
     if (this.hintState && this.currentMoveIndex < this.totalMoves) {
       const chess = new Chess()
       for (let i = 0; i < this.currentMoveIndex; i++) {
@@ -101,6 +169,8 @@ export class OpeningStore {
     return this.selectedOpening.moves[this.currentMoveIndex - 1]
   }
 
+  // ── Study actions ───────────────────────────────────────────────────────────
+
   selectOpening(opening: Opening) {
     this.selectedOpening = opening
     this.currentMoveIndex = 0
@@ -112,8 +182,8 @@ export class OpeningStore {
   saveOpenings(openings: Opening[]) {
     this.openings = openings
     saveOpenings(openings)
-    if (!openings.find(o => o.id === this.selectedOpening?.id)) {
-      this.selectedOpening = openings[0] ?? null
+    if (this.selectedOpening && !openings.find(o => o.id === this.selectedOpening!.id)) {
+      this.selectedOpening = null
     }
   }
 
@@ -133,9 +203,9 @@ export class OpeningStore {
 
   cycleHint() {
     if (this.currentMoveIndex >= this.totalMoves) return
-    if (this.hintState === null)          this.hintState = 'piece'
-    else if (this.hintState === 'piece')  this.hintState = 'destination'
-    else                                  this.hintState = null
+    if (this.hintState === null)         this.hintState = 'piece'
+    else if (this.hintState === 'piece') this.hintState = 'destination'
+    else                                 this.hintState = null
   }
 
   reset() {
@@ -165,7 +235,6 @@ export class OpeningStore {
 
     if (!legalMoves.some(m => m.from === from && m.to === to)) return false
 
-    // Legal but wrong for this opening
     this.wrongMove = true
     this.toast = 'Wrong move! Try again'
     this.toastKey++
@@ -179,4 +248,3 @@ export class OpeningStore {
     return false
   }
 }
-

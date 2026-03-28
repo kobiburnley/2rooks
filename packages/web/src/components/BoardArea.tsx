@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { observer } from 'mobx-react-lite'
 import type { OpeningStore } from '../stores/OpeningStore'
 import ChessBoard from './ChessBoard'
