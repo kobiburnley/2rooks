@@ -111,7 +111,7 @@ const BrowserHeader = observer(({ store }: { store: OpeningStore }) => {
         onClick={() => store.openManage()}
         aria-label="Add opening"
       >
-        + Add
+        Manage
       </button>
     </header>
   )
