@@ -2,86 +2,80 @@ import { useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import { Chess } from 'chess.js'
 import type { OpeningStore } from '../stores/OpeningStore'
-import type { Move } from '../types'
+import type { Opening, Move } from '../types'
+import { buildAiPrompt } from '../data/aiPrompt'
 
-function parseMoves(text: string): Move[] {
-  const trimmed = text.trim()
-  if (!trimmed) throw new Error('No moves entered.')
-
-  let tokens: string[] = []
-  const hasMoveNumbers = /\d+\./.test(trimmed)
-
-  if (hasMoveNumbers) {
-    const cleaned = trimmed
-      .replace(/\d+\.\.\./g, '')
-      .replace(/\d+\./g, '')
-      .replace(/\{[^}]*\}/g, '')
-      .replace(/\([^)]*\)/g, '')
-      .replace(/\$\d+/g, '')
-      .replace(/[*10½\-]+$/g, '')
-      .trim()
-    tokens = cleaned.split(/\s+/).filter(Boolean)
-  } else if (trimmed.includes('\n')) {
-    tokens = trimmed.split('\n').map(s => s.trim()).filter(Boolean)
-  } else {
-    tokens = trimmed.split(/\s+/).filter(Boolean)
-  }
-
-  if (tokens.length === 0) throw new Error('Could not find any moves.')
-
+function validateOpenings(raw: unknown): Opening[] {
+  const items: unknown[] = Array.isArray(raw) ? raw : [raw]
   const chess = new Chess()
-  const moves: Move[] = []
+  const result: Opening[] = []
 
-  for (const token of tokens) {
-    if (!token || token === '*' || /^(1-0|0-1|1\/2-1\/2)$/.test(token)) continue
-    try {
-      const result = chess.move(token)
-      if (result) moves.push({ san: result.san, explanation: '' })
-    } catch {
-      throw new Error(`Invalid move: "${token}". Please check your input.`)
+  for (const item of items) {
+    if (typeof item !== 'object' || item === null) throw new Error('Each opening must be an object.')
+    const o = item as Record<string, unknown>
+
+    if (typeof o.id !== 'string' || !o.id) throw new Error('Each opening must have a string "id".')
+    if (typeof o.name !== 'string' || !o.name) throw new Error(`Opening "${o.id}" must have a string "name".`)
+    if (typeof o.description !== 'string') throw new Error(`Opening "${o.id}" must have a string "description".`)
+    if (!Array.isArray(o.moves)) throw new Error(`Opening "${o.id}" must have a "moves" array.`)
+    if (o.parentId !== undefined && typeof o.parentId !== 'string') throw new Error(`Opening "${o.id}" parentId must be a string.`)
+
+    chess.reset()
+    const moves: Move[] = []
+    for (const m of o.moves as unknown[]) {
+      if (typeof m !== 'object' || m === null) throw new Error(`Moves in "${o.id}" must be objects.`)
+      const mv = m as Record<string, unknown>
+      if (typeof mv.san !== 'string') throw new Error(`Each move in "${o.id}" must have a string "san".`)
+      try {
+        const played = chess.move(mv.san)
+        moves.push({ san: played.san, explanation: typeof mv.explanation === 'string' ? mv.explanation : '' })
+      } catch {
+        throw new Error(`Invalid move "${mv.san}" in opening "${o.id}".`)
+      }
     }
+
+    result.push({
+      id: o.id as string,
+      name: o.name as string,
+      description: o.description as string,
+      moves,
+      ...(o.parentId ? { parentId: o.parentId as string } : {}),
+    })
   }
 
-  if (moves.length === 0) throw new Error('No valid moves found.')
-  return moves
-}
-
-function generateId(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
+  return result
 }
 
 export const AddOpeningScreen = observer(({ store }: { store: OpeningStore }) => {
-  const [movesText, setMovesText]       = useState('')
-  const [nameText, setNameText]         = useState('')
-  const [descText, setDescText]         = useState('')
-  const [parseError, setParseError]     = useState<string | null>(null)
-  const [parseSuccess, setParseSuccess] = useState<string | null>(null)
-  const [parsedMoves, setParsedMoves]   = useState<Move[] | null>(null)
+  const [request, setRequest]   = useState('')
+  const [jsonText, setJsonText] = useState('')
+  const [error, setError]       = useState<string | null>(null)
+  const [copied, setCopied]     = useState(false)
 
-  const handleParse = () => {
-    setParseError(null)
-    setParseSuccess(null)
-    setParsedMoves(null)
-    try {
-      const moves = parseMoves(movesText)
-      setParsedMoves(moves)
-      setParseSuccess(`Parsed ${moves.length} moves successfully. Enter a name and save.`)
-    } catch (err) {
-      setParseError(err instanceof Error ? err.message : 'Unknown error')
-    }
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(buildAiPrompt(request))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleSave = () => {
-    if (!parsedMoves) { setParseError('Parse moves first before saving.'); return }
-    const name = nameText.trim() || 'Custom Opening'
-    const newOpening = {
-      id: generateId(name),
-      name,
-      description: descText.trim() || 'A custom opening.',
-      moves: parsedMoves,
+  const handleAdd = () => {
+    setError(null)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(jsonText.trim())
+    } catch {
+      setError('Invalid JSON. Paste the AI response exactly as-is.')
+      return
     }
-    store.saveOpenings([...store.openings, newOpening])
-    store.startStudying(newOpening)
+    try {
+      const openings = validateOpenings(parsed)
+      store.saveOpenings([...store.openings, ...openings])
+      const firstWithMoves = openings.find(o => o.moves.length > 0)
+      if (firstWithMoves) store.startStudying(firstWithMoves)
+      else store.openManage()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    }
   }
 
   return (
@@ -100,51 +94,48 @@ export const AddOpeningScreen = observer(({ store }: { store: OpeningStore }) =>
 
       <div className="browser-list">
         <div className="form-group">
-          <label htmlFor="moves-input">Moves</label>
-          <textarea
-            id="moves-input"
-            value={movesText}
-            onChange={e => { setMovesText(e.target.value); setParseError(null); setParseSuccess(null); setParsedMoves(null) }}
-            placeholder={'1. e4 e5 2. Nf3 Nc6 3. Bb5\n\nor one move per line:\ne4\ne5\nNf3'}
-            rows={5}
+          <label htmlFor="request-input">Step 1 — What opening do you want to learn?</label>
+          <input
+            id="request-input"
+            type="text"
+            value={request}
+            onChange={e => { setRequest(e.target.value); setCopied(false) }}
+            placeholder="e.g. King's Indian Defense classical variation"
           />
-          <div className="form-hint">
-            Accepts: PGN format (1. e4 e5 2. Nf3), one move per line, or space-separated moves.
-          </div>
         </div>
 
-        <button className="parse-btn" onClick={handleParse} style={{ marginBottom: '12px' }}>
-          Parse Moves
+        <button
+          className="parse-btn"
+          onClick={handleCopy}
+          disabled={!request.trim()}
+          style={{ marginBottom: '24px' }}
+        >
+          {copied ? 'Copied!' : 'Generate & Copy Prompt'}
         </button>
 
-        {parseError   && <div className="parse-error">{parseError}</div>}
-        {parseSuccess && <div className="parse-success">{parseSuccess}</div>}
+        <div className="form-group">
+          <label htmlFor="json-input">Step 2 — Paste the AI response</label>
+          <p className="form-hint">
+            Paste the prompt into any AI (ChatGPT, Claude, Gemini…) then paste the JSON reply here.
+          </p>
+          <textarea
+            id="json-input"
+            value={jsonText}
+            onChange={e => { setJsonText(e.target.value); setError(null) }}
+            placeholder="Paste the JSON here…"
+            rows={8}
+          />
+        </div>
 
-        {parsedMoves && (
-          <>
-            <div className="form-group" style={{ marginTop: '12px' }}>
-              <label htmlFor="name-input">Opening Name</label>
-              <input
-                id="name-input"
-                type="text"
-                value={nameText}
-                onChange={e => setNameText(e.target.value)}
-                placeholder="e.g. King's Indian Defense"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="desc-input">Description (optional)</label>
-              <input
-                id="desc-input"
-                type="text"
-                value={descText}
-                onChange={e => setDescText(e.target.value)}
-                placeholder="Brief description of this opening..."
-              />
-            </div>
-            <button className="parse-btn" onClick={handleSave}>Save Opening</button>
-          </>
-        )}
+        {error && <div className="parse-error">{error}</div>}
+
+        <button
+          className="parse-btn"
+          onClick={handleAdd}
+          disabled={!jsonText.trim()}
+        >
+          Add Opening
+        </button>
       </div>
     </div>
   )
