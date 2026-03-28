@@ -46,6 +46,7 @@ export class OpeningStore {
       fen:              computed,
       highlightSquares: computed,
       lastMove:         computed,
+      pgn:              computed,
       // actions
       navigate:         action,
       startStudying:    action,
@@ -187,6 +188,15 @@ export class OpeningStore {
   get lastMove() {
     if (this.currentMoveIndex === 0 || !this.selectedOpening) return null
     return this.selectedOpening.moves[this.currentMoveIndex - 1]
+  }
+
+  get pgn(): string {
+    if (!this.selectedOpening || this.currentMoveIndex === 0) return ''
+    const chess = new Chess()
+    for (let i = 0; i < this.currentMoveIndex; i++) {
+      try { chess.move(this.selectedOpening.moves[i].san) } catch { break }
+    }
+    return chess.pgn()
   }
 
   // ── Study actions ───────────────────────────────────────────────────────────

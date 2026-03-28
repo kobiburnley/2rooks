@@ -62,7 +62,8 @@ export const AddOpeningScreen = observer(({ store }: { store: OpeningStore }) =>
     setError(null)
     let parsed: unknown
     try {
-      parsed = JSON.parse(jsonText.trim())
+      const stripped = jsonText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+      parsed = JSON.parse(stripped)
     } catch {
       setError('Invalid JSON. Paste the AI response exactly as-is.')
       return

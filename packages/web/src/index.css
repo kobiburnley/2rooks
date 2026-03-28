@@ -631,6 +631,27 @@ body {
   white-space: nowrap;
 }
 
+.copy-pgn-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #aaa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.copy-pgn-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.08);
+  color: #eee;
+}
+.copy-pgn-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 /* ===== Opening Browser ===== */
 .browser {
   width: 100%;
