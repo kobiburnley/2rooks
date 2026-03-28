@@ -1,0 +1,9 @@
+{
+  "name": "2rook",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "yarn workspace @2rook/web dev",
+    "build": "yarn workspace @2rook/web build"
+  }
+}
